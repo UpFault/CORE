@@ -1,0 +1,11 @@
+name: CORE
+version: '${project.version}'
+main: com.upfault.core.CORE
+api-version: 1.19
+load: STARTUP
+authors: [ UpFault ]
+commands:
+  core:
+    description: The Main Command for the CORE plugin.
+    permission: core.core
+    default: op
