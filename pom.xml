@@ -6,7 +6,7 @@
 
     <groupId>com.upfault</groupId>
     <artifactId>CORE</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1</version>
     <packaging>jar</packaging>
 
     <name>CORE</name>
@@ -64,6 +64,12 @@
     </repositories>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.32</version>
+        </dependency>
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
