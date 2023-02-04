@@ -19,7 +19,6 @@ public class MainCommand implements CommandExecutor {
 			return true;
 		}
 
-		if (command.getName().equals("core")) {
 			try {
 				if (args.length == 0) {
 					sender.sendMessage(ChatColor.RED + "Error: No argument provided. Type /help for a list of commands.");
@@ -54,7 +53,6 @@ public class MainCommand implements CommandExecutor {
 			} catch (Exception e) {
 				Bukkit.getLogger().warning(e.getMessage());
 			}
-		}
 		return false;
 	}
 }

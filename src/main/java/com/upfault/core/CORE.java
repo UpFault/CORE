@@ -44,7 +44,7 @@ public final class CORE extends JavaPlugin {
 		Objects.requireNonNull(getCommand("build")).setExecutor(new BuildAndDestroyModeCommand());
 		Objects.requireNonNull(getCommand("destroy")).setExecutor(new BuildAndDestroyModeCommand());
 		Objects.requireNonNull(getCommand("rank")).setExecutor(new RankCommand());
-		Objects.requireNonNull(getCommand("rank")).setExecutor(new HelpCommand());
+		Objects.requireNonNull(getCommand("help")).setExecutor(new HelpCommand());
 	}
 
 	private void registerListeners() {
