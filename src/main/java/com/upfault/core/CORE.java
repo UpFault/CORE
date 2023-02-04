@@ -1,65 +1,95 @@
 package com.upfault.core;
 
-import com.upfault.core.commands.main;
-import com.upfault.core.events.ScoreboardEvent;
+import com.upfault.core.commands.BuildAndDestroyModeCommand;
+import com.upfault.core.commands.HelpCommand;
+import com.upfault.core.commands.MainCommand;
+import com.upfault.core.commands.RankCommand;
+import com.upfault.core.events.*;
 import com.upfault.core.utils.VersionCheck;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class CORE extends JavaPlugin {
 
+	@Getter
 	public static CORE instance;
-	private FileConfiguration config;
-	private File configFile;
 
 	@Override
 	public void onEnable() {
-		// Plugin startup logic
 		instance = this;
 		VersionCheck.check();
-		registerCommand();
-		registerEvents();
-		generateFiles();
+		registerCommands();
+		registerListeners();
+		generateConfig();
 	}
 
 	@Override
 	public void onDisable() {
-		// Plugin shutdown logic
+		saveConfig();
 		instance = null;
 	}
 
-	private void registerCommand() {
-		Objects.requireNonNull(getCommand("core")).setExecutor(new main());
+	private void registerCommands() {
+		Objects.requireNonNull(getCommand("core")).setExecutor(new MainCommand());
+		Objects.requireNonNull(getCommand("build")).setExecutor(new BuildAndDestroyModeCommand());
+		Objects.requireNonNull(getCommand("destroy")).setExecutor(new BuildAndDestroyModeCommand());
+		Objects.requireNonNull(getCommand("rank")).setExecutor(new RankCommand());
+		Objects.requireNonNull(getCommand("rank")).setExecutor(new HelpCommand());
 	}
 
-	private void registerEvents() {
-		Bukkit.getPluginManager().registerEvents(new ScoreboardEvent(), this);
-//		Bukkit.getPluginManager().registerEvents(new PlayerJoinSQLListener("localhost", "UPFAULT", "2bZ!e05gJ^"), this);
-	}
-
-	private void generateFiles() {
-		configFile = new File(getDataFolder(), "config.yml");
-		if (!configFile.exists()) {
-			configFile.getParentFile().mkdirs();
-			saveDefaultConfig();
+	private void registerListeners() {
+		ArrayList<Listener> listeners = new ArrayList<>(Arrays.asList(
+				new HubGuard(),
+				new HurtEvents(),
+				new JoinEvents(),
+				new LeaveEvents(),
+				new MoveEvent(),
+				new ScoreboardEvent()
+		));
+		for (Listener listener : listeners) {
+			Bukkit.getPluginManager().registerEvents(listener, this);
 		}
-		config = YamlConfiguration.loadConfiguration(configFile);
 	}
 
-	@Override
-	public void saveDefaultConfig() {
+	private void generateConfig() {
+		File configFile = new File(getDataFolder(), "config.yml");
+		File configDirectory = configFile.getParentFile();
+
 		if (!configFile.exists()) {
+			if (!configDirectory.exists() && !configDirectory.mkdirs()) {
+				getLogger().severe("Failed to create config directory");
+				return;
+			}
 			saveResource("config.yml", false);
 		}
-	}
+		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+		YamlConfiguration defaultConfig = new YamlConfiguration();
 
-	public @NotNull FileConfiguration getConfig() {
-		return config;
+//		SET DEFAULT VALUES
+
+		defaultConfig.set("database.host", "localhost");
+		defaultConfig.set("database.port", 3306);
+		defaultConfig.set("database.database", "db");
+		defaultConfig.set("database.user", "admin");
+		defaultConfig.set("database.password", "12345");
+
+		config.addDefaults(defaultConfig);
+		config.options().copyDefaults(true);
+
+		try {
+			config.save(configFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

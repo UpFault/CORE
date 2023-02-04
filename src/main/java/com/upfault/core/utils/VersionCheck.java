@@ -12,7 +12,7 @@ import java.net.URL;
 
 public class VersionCheck {
     public static void check() {
-        PluginDescriptionFile pdf = CORE.instance.getDescription();
+        PluginDescriptionFile pdf = CORE.getInstance().getDescription();
         String currentVersion = pdf.getVersion();
         try {
             HttpURLConnection con = (HttpURLConnection) new URL("https://raw.githubusercontent.com/UpFault/CORE/master/version.txt").openConnection();
@@ -21,15 +21,15 @@ public class VersionCheck {
             String latestVersion = in.readLine();
             in.close();
             if (!currentVersion.equals(latestVersion)) {
-                Bukkit.getLogger().warning("Your plugin is outdated! Current version: " + currentVersion + " Latest version: " + latestVersion);
+                Bukkit.getLogger().warning("[CORE] Your plugin is outdated! Current version: " + currentVersion + " Latest version: " + latestVersion);
             }
         } catch (Exception e) {
-            Bukkit.getLogger().warning("Failed to check for updates: " + e.getMessage());
+            Bukkit.getLogger().warning("[CORE] Failed to check for updates: " + e.getMessage());
         }
     }
 
     public static String getVersion() {
-        PluginDescriptionFile pdf = CORE.instance.getDescription();
+        PluginDescriptionFile pdf = CORE.getInstance().getDescription();
         String currentVersion = pdf.getVersion();
         try {
             HttpURLConnection con = (HttpURLConnection) new URL("https://raw.githubusercontent.com/UpFault/CORE/master/version.txt").openConnection();

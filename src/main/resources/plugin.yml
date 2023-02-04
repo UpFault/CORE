@@ -1,5 +1,6 @@
 name: CORE
 version: '${project.version}'
+description: A plugin by upfault
 main: com.upfault.core.CORE
 api-version: 1.19
 load: STARTUP
@@ -8,4 +9,15 @@ commands:
   core:
     description: The Main Command for the CORE plugin.
     permission: core.core
-    default: op
+  build:
+    description: Enables and disables build mode
+    permission: core.build
+  destroy:
+    description: Enables and disables destroy mode
+    permission: core.destroy
+  rank:
+    description: Promote, Demote, and View a players rank
+    permission: core.rank
+  help:
+    description: Displays all of the commands, and other helpful information.
+    permission: core.help
