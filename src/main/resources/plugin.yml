@@ -3,7 +3,7 @@ version: '${project.version}'
 description: A plugin by upfault
 main: com.upfault.core.CORE
 api-version: 1.19
-load: STARTUP
+load: POSTWORLD
 authors: [ UpFault ]
 commands:
   core:

@@ -1,6 +1,9 @@
 package com.upfault.core.events;
 
+import com.upfault.core.CORE;
+import com.upfault.core.utils.FastBoard;
 import com.upfault.core.utils.Utilities;
+import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,6 +23,17 @@ public class LeaveEvents implements Listener {
 		FileConfiguration playerConfig = Utilities.getPlayerConfig(playerUUID);
 		File playerFile = Utilities.getPlayerFile(playerUUID);
 
+		event.quitMessage(Component.text(""));
 		playerConfig.save(playerFile);
+	}
+
+	@EventHandler
+	public void removeScoreboard(PlayerQuitEvent event) {
+
+		FastBoard board = CORE.boards.remove(event.getPlayer().getUniqueId());
+
+		if (board != null) {
+			board.delete();
+		}
 	}
 }
