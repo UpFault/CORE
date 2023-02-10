@@ -28,8 +28,8 @@ public class HelpCommand implements CommandExecutor {
 			helpMessage.append(ChatColor.GREEN)
 					.append("/").append(cmdName)
 					.append(ChatColor.WHITE).append(" - ").append(description).append("\n");
-			sender.sendMessage(helpMessage.toString());
 		}
-		return false;
+		sender.sendMessage(helpMessage.toString());
+		return true;
 	}
 }

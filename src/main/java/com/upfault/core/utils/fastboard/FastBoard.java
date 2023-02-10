@@ -1,3 +1,4 @@
+package com.upfault.core.utils.fastboard;
 /*
  * This file is part of FastBoard, licensed under the MIT License.
  *
@@ -21,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-package com.upfault.core.utils;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

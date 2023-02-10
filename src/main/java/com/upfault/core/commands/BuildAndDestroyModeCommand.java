@@ -28,16 +28,10 @@ public class BuildAndDestroyModeCommand implements CommandExecutor {
 		try {
 			switch (command.getName()) {
 				case "destroy":
-					boolean destroyMode = Objects.equals(config.get("destroymode"), true);
-					config.set("destroymode", !destroyMode);
-					config.save(file);
-					player.sendMessage((destroyMode ? ChatColor.RED + "Destroy mode disabled." : ChatColor.GREEN +"Destroy mode enabled."));
+					toggleMode(config, file, player, "destroymode", ChatColor.RED + "Destroy mode disabled.", ChatColor.GREEN + "Destroy mode enabled.");
 					break;
 				case "build":
-					boolean buildMode = Objects.equals(config.get("buildmode"), true);
-					config.set("buildmode", !buildMode);
-					config.save(file);
-					player.sendMessage((buildMode ? ChatColor.RED + "Build mode disabled." : ChatColor.GREEN +"Build mode enabled."));
+					toggleMode(config, file, player, "buildmode", ChatColor.RED + "Build mode disabled.", ChatColor.GREEN + "Build mode enabled.");
 					break;
 			}
 		} catch (IOException e) {
@@ -45,5 +39,12 @@ public class BuildAndDestroyModeCommand implements CommandExecutor {
 		}
 
 		return false;
+	}
+
+	private void toggleMode(FileConfiguration config, File file, Player player, String key, String disableMessage, String enableMessage) throws IOException {
+		boolean mode = Objects.equals(config.get(key), true);
+		config.set(key, !mode);
+		config.save(file);
+		player.sendMessage(mode ? disableMessage : enableMessage);
 	}
 }

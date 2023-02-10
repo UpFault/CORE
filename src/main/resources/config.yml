@@ -1,0 +1,26 @@
+
+# DATABASE
+
+database:
+  #if you use sqlite3(a locally hosted db) put the "playerData.db" file in the database folder in "CORE/database"
+  # NOTE: the database file must be called "playerData" spelled exactly like shown.
+  host: localhost # Database host
+  port: 3306 # Database port
+  database: db # Database name
+  user: username
+  password: password
+
+# SCOREBOARD
+
+scoreboard:
+  world-name: # Set this to the world you want this scoreboard displayed in.
+    animated-title: true # If set to true change animations.yml to your preference.
+    update-delay: 20 # How often the scoreboard should update set to -1 for no delay, default is 20 or every second
+    title: "&b&lSCOREBOARD"
+    lines: # Max of 15 lines visible.
+      - "FIRST LINE"
+      - "SECOND LINE"
+
+# SERVER
+
+maintenance: false

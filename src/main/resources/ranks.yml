@@ -1,0 +1,32 @@
+# formatting ranks other than how they are below may cause issues.
+Ranks:
+  default:
+    display: ""
+    color: "&7"
+    weight: "0"
+    permissions: ["core.help"]
+  vip:
+    display: "VIP"
+    color: "&a"
+    weight: "10"
+    permissions: ["core.help"]
+  mvp:
+    display: "MVP"
+    color: "&b"
+    weight: "20"
+    permissions: [ "core.help" ]
+  mod:
+    display: "MOD"
+    color: "&2"
+    weight: "30"
+    permissions: [ "core.core", "core.help" ]
+  admin:
+    display: "ADMIN"
+    color: "&c"
+    weight: "40"
+    permissions: [ "core.core", "core.build", "core.destroy", "core.rank", "core.help" ]
+  owner:
+    display: "OWNER"
+    color: "&c"
+    weight: "50"
+    permissions: [ "core.core", "core.build", "core.destroy", "core.rank", "core.help" ]

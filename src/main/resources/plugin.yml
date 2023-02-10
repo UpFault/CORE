@@ -1,9 +1,10 @@
 name: CORE
 version: '${project.version}'
+prefix: "CORE"
 description: A plugin by upfault
 main: com.upfault.core.CORE
 api-version: 1.19
-load: POSTWORLD
+load: STARTUP
 authors: [ UpFault ]
 commands:
   core:
@@ -21,3 +22,6 @@ commands:
   help:
     description: Displays all of the commands, and other helpful information.
     permission: core.help
+  maintenance:
+    description: Enables and disables servers maintenance mode.
+    permission: core.maintenance

@@ -1,19 +1,15 @@
 package com.upfault.core;
 
-import com.upfault.core.commands.BuildAndDestroyModeCommand;
-import com.upfault.core.commands.HelpCommand;
-import com.upfault.core.commands.MainCommand;
-import com.upfault.core.commands.RankCommand;
+import com.upfault.core.commands.*;
 import com.upfault.core.events.*;
-import com.upfault.core.utils.*;
+import com.upfault.core.utils.Utilities;
+import com.upfault.core.utils.VersionCheck;
+import com.upfault.core.utils.fastboard.FastBoard;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,11 +17,9 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public final class CORE extends JavaPlugin {
-
 	@Getter
 	public static CORE instance;
 	public static final Map<UUID, FastBoard> boards = new HashMap<>();
@@ -37,149 +31,163 @@ public final class CORE extends JavaPlugin {
 		registerCommands();
 		registerListeners();
 		generateConfig();
-		registerRanks();
-		clear();
-		Bukkit.getScheduler().runTaskTimer(this, () -> {
-			List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-			for (Player player : players) {
-				updateScoreboardForPlayer(player);
-				JoinEvents.updatePlayerTeam(player);
+		getServer().getScheduler().runTaskTimer(this, () -> {
+			for (FastBoard board : boards.values()) {
+				updateLines(board);
 			}
 		}, 0, 20);
-		new LevelingSystem().startTask();
+		int taskId = 1;
+		final int[] animationIndex = {0};
+		int finalTaskId = taskId;
+		taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
+			for (FastBoard board : boards.values()) {
+				String world = board.getPlayer().getWorld().getName();
+				List<String> animationLines = Utilities.getAnimationsConfig().getStringList("animated-title." + world);
+				if (getConfig().getBoolean("scoreboard." + world + ".animated-title")) {
+					if (!animationLines.isEmpty()) {
+						String line = animationLines.get(animationIndex[0] % animationLines.size());
+						String translatedLine = ChatColor.translateAlternateColorCodes('&', line);
+						board.updateTitle(translatedLine);
+						animationIndex[0]++;
+					}
+				} else {
+					updateTitle(board);
+					Bukkit.getScheduler().cancelTask(finalTaskId);
+				}
+			}
+		}, 0L, 20L);
 	}
 
 	@Override
 	public void onDisable() {
-		saveConfig();
+		saveDefaultConfig();
 		HandlerList.unregisterAll(this);
 		instance = null;
 	}
 
+	@SuppressWarnings("all")
 	private void registerCommands() {
-		Objects.requireNonNull(getCommand("core")).setExecutor(new MainCommand());
-		Objects.requireNonNull(getCommand("build")).setExecutor(new BuildAndDestroyModeCommand());
-		Objects.requireNonNull(getCommand("destroy")).setExecutor(new BuildAndDestroyModeCommand());
-		Objects.requireNonNull(getCommand("rank")).setExecutor(new RankCommand());
-		Objects.requireNonNull(getCommand("rank")).setTabCompleter(new RankCommand());
-		Objects.requireNonNull(getCommand("help")).setExecutor(new HelpCommand());
+		getCommand("core").setExecutor(new MainCommand());
+		getCommand("core").setTabCompleter(new MainCommand());
+		getCommand("build").setExecutor(new BuildAndDestroyModeCommand());
+		getCommand("destroy").setExecutor(new BuildAndDestroyModeCommand());
+		getCommand("rank").setExecutor(new RankCommand());
+		getCommand("rank").setTabCompleter(new RankCommand());
+		getCommand("help").setExecutor(new HelpCommand());
+		getCommand("maintenance").setExecutor(new MaintenenceModeCommand());
+		getCommand("maintenance").setTabCompleter(new MaintenenceModeCommand());
 	}
 
 	private void registerListeners() {
 		ArrayList<Listener> listeners = new ArrayList<>(Arrays.asList(
-				new HubGuard(),
-				new HurtEvents(),
-				new JoinEvents(),
-				new LeaveEvents(),
-				new MoveEvent(),
-				new ChatEvent()
+				new HubProtectionEvent(),
+				new PlayerJoinEvent(),
+				new PlayerQuitEvent(),
+				new PlayerFallProtectionEvent(),
+				new ChatFormatEvent(),
+				new InventoryInteractionEvent(),
+				new CommandPreProcessEvent(),
+				new PlayerDataEvent(),
+				new PlayerListPingEvent()
 		));
 		for (Listener listener : listeners) {
 			Bukkit.getPluginManager().registerEvents(listener, this);
 		}
 	}
 
-	private void registerRanks() {
-		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-		for (Rank rank : Rank.values()) {
-			Team team = scoreboard.getTeam(rank.toString());
-			if (team == null) {
-				if (rank == Rank.DEFAULT) {
-					team = scoreboard.registerNewTeam(rank.toString());
-					team.setPrefix(rank.getColor() + "");
-					team.setColor(rank.getColor());
-				} else {
-					team = scoreboard.registerNewTeam(rank.toString());
-					team.setPrefix(rank.getColor() + rank.getName() + " ");
-					team.setColor(rank.getColor());
-				}
-			}
-		}
-
-	}
-
-	private void clear() {
-		World hub = Bukkit.getWorld("hub");
-		assert hub != null;
-		for (LivingEntity entity : hub.getLivingEntities()) {
-			if (!(entity instanceof Player)) {
-				entity.setHealth(0);
-			}
-		}
-	}
-
 	private void generateConfig() {
-		File configFile = new File(getDataFolder(), "config.yml");
-		File configDirectory = configFile.getParentFile();
-
-		if (!configFile.exists()) {
-			if (!configDirectory.exists() && !configDirectory.mkdirs()) {
-				getLogger().severe("Failed to create config directory");
-				return;
+		String[] files = new String[]{"config.yml", "animations.yml", "ranks.yml", "language.yml"};
+		File dataFolder = getDataFolder();
+		for (String file : files) {
+			File configFile = new File(dataFolder, file);
+			File parentDir = configFile.getParentFile();
+			if (!parentDir.exists() && !parentDir.mkdirs()) {
+				getLogger().severe("Failed to create the directory for " + file);
+				continue;
 			}
-			saveResource("config.yml", false);
+			this.saveDefaultConfig(configFile, file);
+
+			File databaseDir = new File(getDataFolder(), "database");
+			if (!databaseDir.exists() && !databaseDir.mkdirs()) {
+				getLogger().severe("Failed to create database directory");
+			}
+		}
+	}
+
+	private void saveDefaultConfig(File configFile, String defaultConfigFile) {
+		if (!configFile.exists()) {
+			saveResource(defaultConfigFile, false);
 		}
 		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-		YamlConfiguration defaultConfig = new YamlConfiguration();
-
-//		SET DEFAULT VALUES
-
-		defaultConfig.set("database.host", "localhost");
-		defaultConfig.set("database.port", 3306);
-		defaultConfig.set("database.database", "db");
-		defaultConfig.set("database.user", "admin");
-		defaultConfig.set("database.password", "12345");
-
-		config.addDefaults(defaultConfig);
-		config.options().copyDefaults(true);
-
-		try {
-			config.save(configFile);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void updateScoreboardForPlayer(Player player) {
-		FileConfiguration config = Utilities.getPlayerConfig(player.getUniqueId());
-		String rankName = "NONE";
-		ChatColor rankColor = ChatColor.GRAY;
-
-		for (Rank rank : Rank.values()) {
-			if (config.get("rank").toString().equals(rank.toString())) {
-				rankName = rank.getName().replaceAll("\\[|\\]", "");
-				if (rank == Rank.DEFAULT) {
-					rankName = "NONE";
-				}
-				rankColor = rank.getColor();
-				break;
+		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new File(defaultConfigFile));
+		boolean needsSaving = false;
+		for (String key : defaultConfig.getKeys(true)) {
+			if (!config.contains(key)) {
+				config.set(key, defaultConfig.get(key));
+				needsSaving = true;
 			}
 		}
-
-		String serverIP = Bukkit.getIp();
-		if (serverIP.equals("")) {
-			serverIP = "localhost";
+		if (needsSaving) {
+			try {
+				config.save(configFile);
+			} catch (Exception e) {
+				getLogger().severe("Failed to save " + configFile.getName() + " to disk!");
+			}
 		}
-
-		FastBoard board = boards.get(player.getUniqueId());
-		if (board == null) {
-			board = new FastBoard(player);
-			boards.put(player.getUniqueId(), board);
-		}
-
-		board.updateTitle(ChatColor.AQUA + "" + ChatColor.BOLD + "CORE");
-		board.updateLines(
-				ChatColor.GRAY + Utilities.getDate() + " " + ChatColor.DARK_GRAY + "D12C",
-				"",
-				"Rank: " + rankColor + rankName,
-				"Level: " + ChatColor.GREEN + 0,
-				"",
-				"Lobby: " + ChatColor.GREEN + 0,
-				"",
-				"Friends: " + ChatColor.GREEN + 0,
-				"",
-				ChatColor.AQUA + serverIP
-		);
 	}
 
+	private void updateLines(FastBoard board) {
+		String world = board.getPlayer().getWorld().getName();
+		List<String> lines = getConfig().getStringList("scoreboard." + world + ".lines");
+		List<String> translatedLines = new ArrayList<>();
+		for (String line : lines) {
+			translatedLines.add(ChatColor.translateAlternateColorCodes('&', line));
+		}
+		board.updateLines(translatedLines);
+	}
+
+	private void updateTitle(FastBoard board) {
+		UUID playerUUID = board.getPlayer().getUniqueId();
+		FastBoard playerBoard = boards.get(playerUUID);
+		if (playerBoard != null) {
+			String world = playerBoard.getPlayer().getWorld().getName();
+			String title = getConfig().getString("scoreboard." + world + ".title");
+			assert title != null;
+			board.updateTitle(ChatColor.translateAlternateColorCodes('&', title));
+		}
+	}
+
+	private void registerTeams() {
+		Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		if (mainScoreboard == null) {
+			getLogger().severe("Failed to get scoreboard manager!");
+			return;
+		}
+		List<String> rankNames = new ArrayList<>();
+		List<String> rankColors = new ArrayList<>();
+		FileConfiguration ranksConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder() + "ranks.yml"));
+
+		for (String rank : ranksConfig.getKeys(false)) {
+			String rankName = ranksConfig.getString("Ranks." + rank + ".display");
+			rankNames.add(rankName);
+		}
+		for (String rank : ranksConfig.getKeys(false)) {
+			String rankColor = ranksConfig.getString("Ranks." + rank + ".color");
+			rankColors.add(rankColor);
+		}
+
+		for (int i = 0; i < rankNames.size(); i++) {
+			String rankName = rankNames.get(i);
+			String rankColor = rankColors.get(i);
+
+			Team team = mainScoreboard.getTeam(rankName);
+			if (team == null) {
+				team = mainScoreboard.registerNewTeam(rankName);
+				Bukkit.getLogger().info("Registered " + team.getName() + " as a new team.");
+			}
+
+			team.setColor(ChatColor.valueOf(rankColor));
+			team.setPrefix(rankColor + "[" + rankName + "]");
+		}
+	}
 }

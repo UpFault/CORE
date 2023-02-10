@@ -6,45 +6,53 @@ import org.bukkit.ChatColor;
 import org.bukkit.plugin.PluginDescriptionFile;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.logging.Logger;
 
 public class VersionCheck {
+    private static final String versionUrl = "https://raw.githubusercontent.com/UpFault/CORE/master/version.txt";
+    private static final PluginDescriptionFile pdf = CORE.getInstance().getDescription();
+    private static final Logger logger = Bukkit.getLogger();
+    private static String latestVersion;
+
     public static void check() {
-        PluginDescriptionFile pdf = CORE.getInstance().getDescription();
         String currentVersion = pdf.getVersion();
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("https://raw.githubusercontent.com/UpFault/CORE/master/version.txt").openConnection();
-            con.setRequestMethod("GET");
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String latestVersion = in.readLine();
-            in.close();
+            latestVersion = getLatestVersion();
             if (!currentVersion.equals(latestVersion)) {
-                Bukkit.getLogger().warning("[CORE] Your plugin is outdated! Current version: " + currentVersion + " Latest version: " + latestVersion);
+                logger.warning("[CORE] Your plugin is outdated! Current version: " + currentVersion + " Latest version: " + latestVersion);
             }
         } catch (Exception e) {
-            Bukkit.getLogger().warning("[CORE] Failed to check for updates: " + e.getMessage());
+            logger.warning("[CORE] Failed to check for updates: " + e.getMessage());
         }
     }
 
     public static String getVersion() {
-        PluginDescriptionFile pdf = CORE.getInstance().getDescription();
         String currentVersion = pdf.getVersion();
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("https://raw.githubusercontent.com/UpFault/CORE/master/version.txt").openConnection();
-            con.setRequestMethod("GET");
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String latestVersion = in.readLine();
-            in.close();
+            if (latestVersion == null) {
+                latestVersion = getLatestVersion();
+            }
             if (!currentVersion.equals(latestVersion)) {
                 return ChatColor.RED + "" + currentVersion + "->" + ChatColor.GREEN + "" + latestVersion;
             } else {
                 return currentVersion;
             }
         } catch (Exception e) {
-//            Bukkit.getLogger().warning("Failed to check for updates: " + e.getMessage());
+            logger.warning("[CORE] Failed to check for updates: " + e.getMessage());
         }
         return null;
+    }
+
+    private static String getLatestVersion() throws IOException {
+        HttpURLConnection con = (HttpURLConnection) new URL(versionUrl).openConnection();
+        con.setRequestMethod("GET");
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String latestVersion = in.readLine();
+        in.close();
+        return latestVersion;
     }
 }
